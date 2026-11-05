@@ -57,8 +57,11 @@ class VelaCarAppService : CarAppService() {
     // place list) crashed Vela the moment it was picked in the car: "PlaceListNavigationTemplate
     // is not allowed for session with display type 1" (issue #179, 2026-10-06).
     override fun onCreateSession(sessionInfo: androidx.car.app.SessionInfo): Session =
-        if (sessionInfo.displayType == androidx.car.app.SessionInfo.DISPLAY_TYPE_CLUSTER) ClusterSession()
-        else onCreateSession()
+        if (sessionInfo.displayType == androidx.car.app.SessionInfo.DISPLAY_TYPE_CLUSTER) {
+            ClusterSession(locationProvider, navSession, routeEngine)
+        } else {
+            onCreateSession()
+        }
 
     override fun onCreateSession(): Session {
         // The neural voice is wired into VoiceGuide by the phone's view model; a drive started from
@@ -82,12 +85,31 @@ class VelaCarAppService : CarAppService() {
     }
 }
 
-/** The instrument cluster's session: one bare navigation template. The turn, distance and arrival
- *  shown there come from the trip data the main session publishes through NavigationManager; this
- *  screen only has to exist and be of the one kind the cluster allows. */
-private class ClusterSession : Session() {
+/** The instrument cluster's session: a navigation template, the one kind the cluster allows, over
+ *  a map of its own. The turn, distance and arrival shown there come from the trip data the main
+ *  session publishes through NavigationManager. The map is a second renderer following the car,
+ *  for a host that lends the cluster a surface (Gearslip does, beside its turn card); one that
+ *  doesn't simply never asks it to draw. */
+private class ClusterSession(
+    private val locationProvider: LocationProvider,
+    private val navSession: NavSession,
+    private val routeEngine: RouteEngine,
+) : Session() {
     override fun onCreateScreen(intent: android.content.Intent): androidx.car.app.Screen =
-        object : androidx.car.app.Screen(carContext) {
+        object : androidx.car.app.Screen(carContext), androidx.lifecycle.DefaultLifecycleObserver {
+            // Its own renderer, not the main screen's: each holds the one surface it was lent.
+            private val renderer = CarMapRenderer(carContext, locationProvider, navSession, routeEngine)
+
+            init { lifecycle.addObserver(this) }
+
+            override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
+                renderer.follow()
+                carContext.getCarService(androidx.car.app.AppManager::class.java).setSurfaceCallback(renderer)
+                renderer.start()
+            }
+
+            override fun onStop(owner: androidx.lifecycle.LifecycleOwner) = renderer.stop()
+
             override fun onGetTemplate(): androidx.car.app.model.Template =
                 androidx.car.app.navigation.model.NavigationTemplate.Builder()
                     .setActionStrip(

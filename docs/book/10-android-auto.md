@@ -253,6 +253,12 @@ navigation template only. `VelaCarAppService` gives it a `ClusterSession` with o
 `NavigationTemplate`. The turn and the arrival shown there come from the trip data above. The main
 session's place list is not allowed on that display and crashes the app there.
 
+The cluster session also has a map. Its screen owns a second `CarMapRenderer`, separate from the
+main screen's because each renderer holds the one surface it was lent, and sets it as the
+session's surface callback. The renderer follows the car from the start. A host that gives the
+cluster a surface, as Gearslip does beside its turn card, gets the map there. A host that gives it
+none never asks it to draw.
+
 `ManeuverMapper` turns Vela's maneuvers into car maneuvers:
 
 - A roundabout takes its direction of travel from the route's geometry when it has one, and

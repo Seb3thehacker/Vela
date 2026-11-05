@@ -5505,8 +5505,11 @@ the same `:core` singletons as the phone (`CarDeps`).
   install fields do not change that. On a stock Pixel an install routed through Google's own
   package installer passes. The desktop head unit skips the check.
 - A car with an instrument cluster opens a second session (`DISPLAY_TYPE_CLUSTER`). It gets
-  `ClusterSession`, one bare `NavigationTemplate`, because that display rejects the place-list
-  template. Its content comes from `updateTrip()`.
+  `ClusterSession`, one `NavigationTemplate`, because that display rejects the place-list
+  template. Its turn and arrival come from `updateTrip()`. The screen owns a second
+  `CarMapRenderer` that follows the car and sets it as the session's surface callback, so a host
+  that lends the cluster a surface gets Vela's map there. A host that lends none never asks it to
+  draw.
 - `VelaCarSession` runs its own AOSP location feed into the shared `NavSession` (GPS fixes at 50
   m accuracy or better, or the simulated position), so navigation runs with the phone UI closed. It handles
   `androidx.car.app.action.NAVIGATE` geo intents: coordinates open the route preview, and a

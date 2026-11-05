@@ -340,7 +340,7 @@ What Vela Maps does today, one line per feature. How each one works is in [SPEC.
 - The car's settings cover spoken directions, avoiding tolls, highways and ferries, and the
   traffic layer.
 - The phone and the car share one drive. A trip started on either shows on both.
-- A car with an instrument-cluster display gets the turns there.
+- A car with an instrument-cluster display gets the turns there, and Vela's map beside them when the host makes room for it.
 - A car that runs Android itself can show Vela in its map panel.
 
 ## Phones without a touchscreen
